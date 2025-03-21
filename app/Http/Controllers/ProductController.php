@@ -31,12 +31,28 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $product = Product::with(['category', 'images', 'variations.attributes', 'variations.attributeValues'])->find($id);
-
-        if (!$product) {
-            abort(404);
-        }
-        return view('client.product.product-details', compact('product'));
+        $product = Product::with([
+            'category',
+            'images',
+            'variations.attributeValues.attribute',
+        ])->findOrFail($id);
+    
+        // Lấy ra tất cả value của từng attribute
+        $attributeValues = $product->variations->flatMap(function ($variation) {
+            return $variation->attributeValues;
+        });
+    
+        $colorValues = $attributeValues
+            ->where('attribute_id', 2)
+            ->unique('value')
+            ->values();
+    
+        $sizeValues = $attributeValues
+            ->where('attribute_id', 1)
+            ->unique('value')
+            ->values();
+    
+        return view('client.product.product-details', compact('product', 'colorValues', 'sizeValues'));
     }
 
     public function index()
